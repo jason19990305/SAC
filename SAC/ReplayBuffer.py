@@ -1,4 +1,3 @@
-from collections import deque 
 import numpy as np 
 import torch
 
@@ -7,29 +6,36 @@ import torch
 
 class ReplayBuffer:
     def __init__(self, args):
+        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.mini_batch_size = args.mini_batch_size
         self.max_length = args.buffer_size
-        self.s = deque(maxlen = self.max_length)
-        self.a = deque(maxlen = self.max_length)
-        self.r = deque(maxlen = self.max_length)
-        self.s_ = deque(maxlen = self.max_length)
-        self.dw = deque(maxlen = self.max_length)
-        self.done = deque(maxlen = self.max_length)
-        self.count = 0
+        self.size = 0       
+        self.ptr = 0 
+        self.s = torch.zeros((self.max_length, args.num_states)).to(self.device)
+        self.a = torch.zeros((self.max_length, args.num_actions)).to(self.device)
+        self.r = torch.zeros((self.max_length, 1)).to(self.device)
+        self.s_ = torch.zeros((self.max_length, args.num_states)).to(self.device)
+        self.done = torch.zeros((self.max_length, 1)).to(self.device)
 
     def store(self, s, a, r, s_, done):
-        self.s.append(s)
-        self.a.append(a)
-        self.r.append(r)
-        self.s_.append(s_)
-        self.done.append([done])
-        if self.count <= self.max_length:
-            self.count += 1
+        
+        self.s[self.ptr] = torch.from_numpy(s).to(self.device)
+        self.a[self.ptr] = torch.from_numpy(a).to(self.device)
+        self.s_[self.ptr] = torch.from_numpy(s_).to(self.device)
+        self.r[self.ptr] = torch.from_numpy(np.array(r)).to(self.device)
+        self.done[self.ptr] = torch.from_numpy(np.array(done)).to(self.device)
 
-    def numpy_to_tensor(self):
-        s = torch.tensor(np.array(self.s), dtype=torch.float)
-        a = torch.tensor(np.array(self.a), dtype=torch.float)
-        r = torch.tensor(np.array(self.r), dtype=torch.float)
-        s_ = torch.tensor(np.array(self.s_), dtype=torch.float)
-        done = torch.tensor(np.array(self.done), dtype=torch.float)
-
+        self.ptr = (self.ptr + 1) % self.max_length
+        self.size = min(self.size + 1, self.max_length)
+  
+    def sample_minibatch(self):
+        index = torch.randint(0, self.size, (self.mini_batch_size,))
+        s = self.s[index]
+        a = self.a[index]
+        r = self.r[index]
+        s_ = self.s_[index]
+        done = self.done[index]
+        
         return s, a, r, s_, done
+

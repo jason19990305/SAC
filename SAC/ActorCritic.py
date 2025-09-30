@@ -11,6 +11,7 @@ class Actor(nn.Module):
 
         self.num_states = args.num_states
         self.num_actions = args.num_actions
+        self.action_max = args.action_max
 
         # Insert input and output sizes into hidden_layers
         hidden_layers.insert(0, self.num_states)
@@ -54,8 +55,11 @@ class Actor(nn.Module):
                 print("actor parameter:", param.data)
         action = dist.rsample()
         log_prob = dist.log_prob(action)
-        action = self.tanh(action)
-        return action , log_prob
+        log_prob = log_prob.sum(1, keepdim=True)
+
+        action = self.tanh(action) * self.action_max
+        mean = self.tanh(mean) * self.action_max
+        return action , log_prob , mean
 
 
 class Critic(nn.Module):
@@ -78,12 +82,12 @@ class Critic(nn.Module):
             layer_list.append(layer)
         # put in ModuleList
         self.layers = nn.ModuleList(layer_list)
-        self.tanh = nn.Tanh()
+        self.relu = nn.ReLU()
 
     def forward(self,s,a):
         input_data = torch.cat((s,a),dim=1)
         for i in range(len(self.layers)-1):
-            input_data = self.tanh(self.layers[i](input_data))
+            input_data = self.relu(self.layers[i](input_data))
 
         # predicet value
         v_s = self.layers[-1](input_data)
