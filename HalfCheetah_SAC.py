@@ -1,4 +1,5 @@
 
+
 import gymnasium as gym # openai gym
 import numpy as np 
 import argparse
@@ -45,14 +46,14 @@ class main():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Hyperparameters Setting for SAC")
-    parser.add_argument("--d", type=int, default=1, help="Update target network every d step")
-    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate of actor")
+    parser.add_argument("--d", type=int, default=2, help="Update target network every d step")
+    parser.add_argument("--lr", type=float, default=0.0003, help="Learning rate of actor")
     parser.add_argument("--tau", type=float, default=0.001, help="Parameter for soft update")
     parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor")
     parser.add_argument("--alpha", type=float, default=0.2, help="Tempture parameter")
-    parser.add_argument("--mem_min", type=float, default=100, help="minimum size of replay memory before updating actor-critic.")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
-    parser.add_argument("--buffer_size", type=int, default=int(1e6), help="Learning rate of actor")
+    parser.add_argument("--mem_min", type=float, default=1e3, help="minimum size of replay memory before updating actor-critic.")
+    parser.add_argument("--mini_batch_size", type=int, default=100, help="Mini-Batch size")
+    parser.add_argument("--buffer_size", type=int, default=int(1e4), help="Learning rate of actor")
     parser.add_argument("--max_train_steps", type=int, default=int(1e6), help=" Maximum number of training steps")
     parser.add_argument("--evaluate_freq_steps", type=float, default=2e3, help="Evaluate the policy every 'evaluate_freq_steps' steps")
     args = parser.parse_args()

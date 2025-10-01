@@ -20,7 +20,7 @@ class Agent():
         self.evaluate_freq_steps = args.evaluate_freq_steps
         self.max_train_steps = args.max_train_steps
         self.num_actions = args.num_actions
-        self.batch_size = args.batch_size
+        self.mini_batch_size = args.mini_batch_size
         self.num_states = args.num_states
         self.mem_min = args.mem_min
         self.gamma = args.gamma
@@ -51,6 +51,7 @@ class Agent():
         self.optimizer_actor = torch.optim.Adam(self.actor.parameters(), lr=self.lr, eps=1e-5)
         # Alpha optimizer
         self.log_alpha = torch.zeros(1, requires_grad=True)
+        self.alpha = self.log_alpha.exp().item()
         self.target_entropy = - torch.tensor(self.num_actions, dtype=torch.float)
         self.optimizer_alpha = torch.optim.Adam([self.log_alpha] , lr=self.lr, eps=1e-5)
 
@@ -128,7 +129,7 @@ class Agent():
                 # update state
                 s = s_
 
-                if self.replay_buffer.count >= self.mem_min:
+                if self.replay_buffer.size >= self.mem_min:
                     self.training_count += 1
                     self.update()
 
@@ -209,7 +210,8 @@ class Agent():
         self.optimizer_actor.step()
         
         # Update alpha
-        alpha_loss = -(self.log_alpha * (log_prob + self.target_entropy).detach()).mean()
+        alpha_loss = -(self.log_alpha.exp() * (log_prob + self.target_entropy).detach()).mean()
+        self.optimizer_alpha.zero_grad()    
         alpha_loss.backward()
         self.optimizer_alpha.step()
         self.alpha = self.log_alpha.exp().item()
