@@ -24,7 +24,7 @@ class Agent():
         self.num_states = args.num_states
         self.mem_min = args.mem_min
         self.gamma = args.gamma
-        self.alpha = args.alpha
+        #self.alpha = args.alpha
         self.tau = args.tau
         self.lr = args.lr
         self.d = args.d
@@ -51,7 +51,6 @@ class Agent():
         self.optimizer_actor = torch.optim.Adam(self.actor.parameters(), lr=self.lr, eps=1e-5)
         # Alpha optimizer
         self.log_alpha = torch.zeros(1, requires_grad=True)
-        self.alpha = self.log_alpha.exp().item()
         self.target_entropy = - torch.tensor(self.num_actions, dtype=torch.float)
         self.optimizer_alpha = torch.optim.Adam([self.log_alpha] , lr=self.lr, eps=1e-5)
 
@@ -59,7 +58,11 @@ class Agent():
         print(self.critic1)
         print(self.critic2)
         print("-----------")
-
+        
+    @property
+    def alpha(self):
+        return self.log_alpha.exp()
+    
     def choose_action(self,state):
 
         state = torch.tensor(state, dtype=torch.float)
@@ -138,7 +141,7 @@ class Agent():
                     evaluate_reward , entropy = self.evaluate_policy(self.env)
                     step_reward_list.append(evaluate_reward)
                     step_count_list.append(self.total_steps)
-                    alpha_list.append(self.alpha)
+                    alpha_list.append(self.alpha.item())
                     entropy_list.append(entropy)
                     time_end = time.time()
                     h = int((time_end - time_start) // 3600)
@@ -204,17 +207,16 @@ class Agent():
         value1 = self.critic1(minibatch_s , action)
         value2 = self.critic2(minibatch_s , action)
         min_value = torch.min(value1,value2)
-        actor_loss =  (self.alpha * log_prob - min_value).mean()
+        actor_loss =  (self.alpha.detach() * log_prob - min_value).mean()
         self.optimizer_actor.zero_grad()
         actor_loss.backward()
         self.optimizer_actor.step()
         
         # Update alpha
-        alpha_loss = -(self.log_alpha.exp() * (log_prob + self.target_entropy).detach()).mean()
+        alpha_loss = -(self.alpha * (log_prob + self.target_entropy).detach()).mean()
         self.optimizer_alpha.zero_grad()    
         alpha_loss.backward()
         self.optimizer_alpha.step()
-        self.alpha = self.log_alpha.exp().item()
         
         # Update target networks
         if self.total_steps % self.d == 0 :         

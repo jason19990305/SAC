@@ -3,7 +3,8 @@ import torch.nn.functional as F
 import torch.nn as nn 
 import torch
 
-    
+epsilon = 1e-6
+
 
 class Actor(nn.Module):
     def __init__(self, args, hidden_layers=[64, 64]):
@@ -39,7 +40,6 @@ class Actor(nn.Module):
         mean = self.mean_linear(x)
         log_std = self.std_linear(x)
         log_std = torch.clamp(log_std, min=-20, max=2)
-
         return mean , log_std
     
     def sample(self,state):
@@ -53,13 +53,15 @@ class Actor(nn.Module):
             for param in self.parameters():
                 print("Actor output out of range, check the input state or model parameters.")
                 print("actor parameter:", param.data)
-        action = dist.rsample()
-        log_prob = dist.log_prob(action)
+        x_t = dist.rsample()  # for reparameterization trick (mean + std * N(0,1))
+        y_t = torch.tanh(x_t)
+        action = y_t * self.action_max
+        log_prob = dist.log_prob(x_t)
+        # Enforcing Action Bound
+        log_prob -= torch.log(self.action_max * (1 - y_t.pow(2)) + epsilon)
         log_prob = log_prob.sum(1, keepdim=True)
-
-        action = self.tanh(action) * self.action_max
-        mean = self.tanh(mean) * self.action_max
-        return action , log_prob , mean
+        mean = torch.tanh(mean) * self.action_max
+        return action, log_prob, mean
 
 
 class Critic(nn.Module):

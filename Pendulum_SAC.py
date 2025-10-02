@@ -50,7 +50,7 @@ if __name__ == '__main__':
     parser.add_argument("--lr", type=float, default=0.0003, help="Learning rate of actor")
     parser.add_argument("--tau", type=float, default=0.001, help="Parameter for soft update")
     parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor")
-    parser.add_argument("--alpha", type=float, default=0.2, help="Tempture parameter")
+    parser.add_argument("--alpha", type=float, default=0.0, help="Tempture parameter")
     parser.add_argument("--mem_min", type=float, default=1e3, help="minimum size of replay memory before updating actor-critic.")
     parser.add_argument("--mini_batch_size", type=int, default=100, help="Mini-Batch size")
     parser.add_argument("--buffer_size", type=int, default=int(1e4), help="Learning rate of actor")
