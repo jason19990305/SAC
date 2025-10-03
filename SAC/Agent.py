@@ -186,7 +186,8 @@ class Agent():
             next_action , next_log_prob , _ = self.actor.sample(minibatch_s_)
             next_value1 = self.critic1_target(minibatch_s_,next_action)
             next_value2 = self.critic2_target(minibatch_s_,next_action)
-            target_value = minibatch_r + self.gamma * torch.min(next_value1 , next_value2) * (1 - minibatch_done) - self.alpha * next_log_prob
+            next_min_value = torch.min(next_value1 , next_value2)
+            target_value = minibatch_r + self.gamma * (next_min_value * (1 - minibatch_done) - self.alpha * next_log_prob)
             
         # Update Critic 1
         value1 = self.critic1(minibatch_s , minibatch_a)
