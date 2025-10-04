@@ -24,7 +24,7 @@ class Agent():
         self.num_states = args.num_states
         self.mem_min = args.mem_min
         self.gamma = args.gamma
-        #self.alpha = args.alpha
+        self.init_alpha = args.init_alpha
         self.tau = args.tau
         self.lr = args.lr
         self.d = args.d
@@ -50,7 +50,8 @@ class Agent():
         self.optimizer_critic2 = torch.optim.Adam(self.critic2.parameters(), lr=self.lr, eps=1e-5)
         self.optimizer_actor = torch.optim.Adam(self.actor.parameters(), lr=self.lr, eps=1e-5)
         # Alpha optimizer
-        self.log_alpha = torch.zeros(1, requires_grad=True)
+        self.log_alpha = torch.tensor(np.log(self.init_alpha))
+        self.log_alpha.requires_grad = True
         self.target_entropy = - torch.tensor(self.num_actions, dtype=torch.float)
         self.optimizer_alpha = torch.optim.Adam([self.log_alpha] , lr=self.lr, eps=1e-5)
 
@@ -214,7 +215,7 @@ class Agent():
         self.optimizer_actor.step()
         
         # Update alpha
-        alpha_loss = -(self.alpha * (log_prob + self.target_entropy).detach()).mean()
+        alpha_loss = (self.alpha * (-log_prob - self.target_entropy).detach()).mean()        
         self.optimizer_alpha.zero_grad()    
         alpha_loss.backward()
         self.optimizer_alpha.step()
